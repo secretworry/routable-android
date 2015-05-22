@@ -26,15 +26,15 @@
 
 package com.usepropeller.routable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class Router {
 	private static final Router _router = new Router();
@@ -410,7 +410,7 @@ public class Router {
 			String routerPart = routerUrlSegments[index];
 			String givenPart = givenUrlSegments[index];
 
-			if (routerPart.charAt(0) == ':') {
+			if (routerPart.startsWith(":")) {
 				String key = routerPart.substring(1, routerPart.length());
 				formatParams.put(key, givenPart);
 				continue;
