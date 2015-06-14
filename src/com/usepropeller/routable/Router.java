@@ -35,6 +35,7 @@ import android.os.Bundle;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.WeakHashMap;
 
 public class Router {
 	private static final Router _router = new Router();
@@ -110,11 +111,23 @@ public class Router {
 	private static class RouterParams {
 		public RouterOptions routerOptions;
 		public Map<String, String> openParams;
+
+		public RouterParams() {
+		}
+
+		/**
+		 * Copy constructor for create and reuse cache items
+		 * @param params the params to be cached
+		 */
+		RouterParams( RouterParams params) {
+			this.routerOptions = params.routerOptions;
+			this.openParams = new HashMap<>(params.openParams);
+		}
 	}
 
 	private final Map<String, RouterOptions> _routes = new HashMap<String, RouterOptions>();
 	private String _rootUrl = null;
-	private final Map<String, RouterParams> _cachedRoutes = new HashMap<String, RouterParams>();
+	private final WeakHashMap<String, RouterParams> _cachedRoutes = new WeakHashMap<String, RouterParams>();
 	private Context _context;
 
 	/**
@@ -359,43 +372,66 @@ public class Router {
 	 * each of the parameters (like ":id") has been parsed.
 	 */
 	private RouterParams paramsForUrl(String url) {
-        final String cleanedUrl = cleanUrl(url);
+        url = cleanUrl(url);
 
-		if (this._cachedRoutes.get(url) != null) {
-			return this._cachedRoutes.get(cleanedUrl);
+		String[] split = StringUtils.split(url, '?');
+		url = split[0];
+		String query = null;
+		if (split.length > 1) {
+			query = split[1];
 		}
+		RouterParams params = this._cachedRoutes.get(url);
+		if (params != null) {
+			params = new RouterParams(params);
+		} else {
+			String[] givenParts = StringUtils.split(url, '/');
 
-		String[] givenParts = cleanedUrl.split("/");
+			RouterOptions openOptions = null;
+			for (Entry<String, RouterOptions> entry : this._routes.entrySet()) {
+				String routerUrl = cleanUrl(entry.getKey());
+				RouterOptions routerOptions = entry.getValue();
+				String[] routerParts = routerUrl.split("/");
 
-		RouterOptions openOptions = null;
-		RouterParams openParams = null;
-		for (Entry<String, RouterOptions> entry : this._routes.entrySet()) {
-			String routerUrl = cleanUrl(entry.getKey());
-			RouterOptions routerOptions = entry.getValue();
-			String[] routerParts = routerUrl.split("/");
+				if (routerParts.length != givenParts.length) {
+					continue;
+				}
 
-			if (routerParts.length != givenParts.length) {
-				continue;
+				Map<String, String> givenParams = urlToParamsMap(givenParts, routerParts);
+				if (givenParams == null) {
+					continue;
+				}
+
+				openOptions = routerOptions;
+				params = new RouterParams();
+				params.openParams = givenParams;
+				params.routerOptions = routerOptions;
+				break;
 			}
 
-			Map<String, String> givenParams = urlToParamsMap(givenParts, routerParts);
-			if (givenParams == null) {
-				continue;
+			if (openOptions == null || params == null) {
+				throw new RouteNotFoundException("No route found for url " + url);
 			}
-
-			openOptions = routerOptions;
-			openParams = new RouterParams();
-			openParams.openParams = givenParams;
-			openParams.routerOptions = routerOptions;
-			break;
+			this._cachedRoutes.put(url, new RouterParams(params));
 		}
-
-		if (openOptions == null || openParams == null) {
-			throw new RouteNotFoundException("No route found for url " + url);
+		if (query != null) {
+			params.openParams.putAll(queryToParamsMap(query));
 		}
+		return params;
+	}
 
-		this._cachedRoutes.put(cleanedUrl, openParams);
-		return openParams;
+	private Map<String, String> queryToParamsMap(String query) {
+		Map<String, String> queryParams = new HashMap<>();
+		String[] params = StringUtils.split(query, '&');
+		for (String param : params) {
+			String[] keyValue = StringUtils.split(param, "=", 2);
+			String key = keyValue[0];
+			String value = "";
+			if (keyValue.length > 1) {
+				value = keyValue[1];
+			}
+			queryParams.put(key, value);
+		}
+		return queryParams;
 	}
 
 	/**
