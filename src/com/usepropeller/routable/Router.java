@@ -32,6 +32,8 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -427,12 +429,23 @@ public class Router {
 			String key = keyValue[0];
 			String value = "";
 			if (keyValue.length > 1) {
-				value = keyValue[1];
+				value = decode(keyValue[1]);
 			}
 			queryParams.put(key, value);
 		}
 		return queryParams;
 	}
+
+	private static String decode(String text) {
+		if (text != null) {
+			try {
+				text = URLDecoder.decode(text, "UTF-8");
+			} catch (UnsupportedEncodingException ignore) {
+			}
+		}
+		return text;
+	}
+
 
 	/**
 	 *
