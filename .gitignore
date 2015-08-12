@@ -10,3 +10,4 @@ _layouts
 .DS_Store
 gh-pages
 res/
+*iml
