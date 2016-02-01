@@ -35,6 +35,7 @@ import android.os.Bundle;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.WeakHashMap;
@@ -127,7 +128,7 @@ public class Router {
 		}
 	}
 
-	private final Map<String, RouterOptions> _routes = new HashMap<String, RouterOptions>();
+	private final Map<String, RouterOptions> _routes = new LinkedHashMap<String, RouterOptions>();
 	private String _rootUrl = null;
 	private final WeakHashMap<String, RouterParams> _cachedRoutes = new WeakHashMap<String, RouterParams>();
 	private Context _context;
